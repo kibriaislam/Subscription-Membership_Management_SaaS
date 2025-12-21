@@ -1,6 +1,8 @@
 using System.Text;
+using API.Middleware;
 using Application.Interfaces;
 using Domain.Interfaces;
+using FluentValidation;
 using Infrastructure.BackgroundJobs;
 using Infrastructure.Identity;
 using Infrastructure.Notifications;
@@ -23,16 +25,37 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Subscription & Membership Management API",
         Version = "v1",
-        Description = "SaaS MVP for managing subscriptions and memberships"
+        Description = "A comprehensive SaaS API for managing subscriptions, memberships, payments, and business operations. " +
+                      "This API provides complete functionality for small and medium businesses to manage their subscription-based services.",
+        Contact = new OpenApiContact
+        {
+            Name = "API Support",
+            Email = "support@subscriptionmanagement.com"
+        },
+        License = new OpenApiLicense
+        {
+            Name = "MIT License",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
     });
+
+    // Include XML comments
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token",
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token. " +
+                      "Example: 'Bearer 12345abcdef'",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -49,6 +72,12 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    // Enable annotations
+    c.EnableAnnotations();
+    
+    // Use full names for schema IDs to avoid conflicts
+    c.CustomSchemaIds(type => type.FullName);
 });
 
 // Database configuration
