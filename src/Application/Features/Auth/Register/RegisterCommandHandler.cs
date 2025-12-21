@@ -51,7 +51,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
         await _userRepository.AddAsync(user, cancellationToken);
 
         // Create business
-        var business = new Business
+        var business = new Domain.Entities.Business
         {
             UserId = user.Id,
             Name = dto.BusinessName,

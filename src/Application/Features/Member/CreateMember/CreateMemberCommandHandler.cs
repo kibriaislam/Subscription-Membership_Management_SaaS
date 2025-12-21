@@ -29,7 +29,7 @@ public class CreateMemberCommandHandler : IRequestHandler<CreateMemberCommand, M
             throw new UnauthorizedAccessException("Business context not found");
         }
 
-        var member = new Member
+        var member = new Domain.Entities.Member
         {
             BusinessId = _currentUserService.BusinessId.Value,
             FirstName = request.CreateDto.FirstName,
