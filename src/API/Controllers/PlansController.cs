@@ -8,9 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
+/// <summary>
+/// Subscription plan management controller for creating and managing subscription plans.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[Produces("application/json")]
+[Tags("Subscription Plans")]
 public class PlansController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -20,7 +25,21 @@ public class PlansController : ControllerBase
         _mediator = mediator;
     }
 
+    /// <summary>
+    /// Retrieves all subscription plans for the authenticated user's business.
+    /// </summary>
+    /// <remarks>
+    /// This endpoint returns a list of all subscription plans (both active and inactive) 
+    /// associated with the authenticated user's business. Plans are ordered alphabetically by name.
+    /// </remarks>
+    /// <param name="cancellationToken">A token to observe for request cancellation.</param>
+    /// <returns>
+    /// Returns a 200 OK response with a list of subscription plans on success,
+    /// or a 401 Unauthorized response if the user is not authenticated.
+    /// </returns>
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<SubscriptionPlanDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IEnumerable<SubscriptionPlanDto>>> GetPlans(CancellationToken cancellationToken)
     {
         var query = new GetPlansQuery();
@@ -28,7 +47,26 @@ public class PlansController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Creates a new subscription plan for the authenticated user's business.
+    /// </summary>
+    /// <remarks>
+    /// This endpoint creates a new subscription plan with specified price and duration.
+    /// The plan is automatically set as active upon creation. Price must be greater than or equal to 0,
+    /// and duration must be specified in days (must be greater than 0).
+    /// </remarks>
+    /// <param name="createDto">The subscription plan creation data containing name, price, and duration.</param>
+    /// <param name="cancellationToken">A token to observe for request cancellation.</param>
+    /// <returns>
+    /// Returns a 201 Created response with the created plan details on success,
+    /// or a 400 Bad Request response if validation fails,
+    /// or a 401 Unauthorized response if the user is not authenticated.
+    /// </returns>
     [HttpPost]
+    [Consumes("application/json")]
+    [ProducesResponseType(typeof(SubscriptionPlanDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<SubscriptionPlanDto>> CreatePlan([FromBody] CreatePlanDto createDto, CancellationToken cancellationToken)
     {
         var command = new CreatePlanCommand { CreateDto = createDto };
@@ -36,7 +74,29 @@ public class PlansController : ControllerBase
         return CreatedAtAction(nameof(GetPlans), new { id = result.Id }, result);
     }
 
+    /// <summary>
+    /// Updates an existing subscription plan.
+    /// </summary>
+    /// <remarks>
+    /// This endpoint updates subscription plan details such as name, description, price, duration, and active status.
+    /// The plan must belong to the authenticated user's business. Plans that are in use cannot be deleted,
+    /// but can be deactivated by setting IsActive to false.
+    /// </remarks>
+    /// <param name="id">The unique identifier of the plan to update.</param>
+    /// <param name="updateDto">The plan update data.</param>
+    /// <param name="cancellationToken">A token to observe for request cancellation.</param>
+    /// <returns>
+    /// Returns a 200 OK response with the updated plan details on success,
+    /// or a 400 Bad Request response if validation fails,
+    /// or a 401 Unauthorized response if the user is not authenticated,
+    /// or a 404 Not Found response if the plan does not exist or does not belong to the user's business.
+    /// </returns>
     [HttpPut("{id}")]
+    [Consumes("application/json")]
+    [ProducesResponseType(typeof(SubscriptionPlanDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SubscriptionPlanDto>> UpdatePlan(Guid id, [FromBody] UpdatePlanDto updateDto, CancellationToken cancellationToken)
     {
         var command = new UpdatePlanCommand { PlanId = id, UpdateDto = updateDto };
