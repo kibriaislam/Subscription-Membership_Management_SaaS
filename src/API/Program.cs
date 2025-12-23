@@ -74,7 +74,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     // Enable annotations
-    c.EnableAnnotations();
+ 
     
     // Use full names for schema IDs to avoid conflicts
     c.CustomSchemaIds(type => type.FullName);
@@ -82,7 +82,7 @@ builder.Services.AddSwaggerGen(c =>
 
 // Database configuration
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-var databaseProvider = builder.Configuration["Database:Provider"] ?? "PostgreSQL";
+var databaseProvider = builder.Configuration["Database:Provider"] ?? "MySQL";
 
 if (databaseProvider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase))
 {
@@ -167,7 +167,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.EnvironmentName == "Test")
 {
     app.UseSwagger();
     app.UseSwaggerUI();
