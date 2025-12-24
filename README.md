@@ -8,24 +8,24 @@ This platform is designed for businesses that need to manage recurring membershi
 
 ## Architecture Overview
 
-The solution is structured using Clean Architecture, which means we've separated concerns into distinct layers:
+The solution is structured using Clean Architecture, which means I've separated concerns into distinct layers:
 
 - **Domain Layer**: Contains the core business entities and rules. This is where your business logic lives, completely independent of any external frameworks.
-- **Application Layer**: Handles use cases and business workflows. This is where we orchestrate operations using the CQRS pattern with MediatR.
-- **Infrastructure Layer**: Deals with external concerns like database access, file storage, and third-party services. This is where we implement the interfaces defined in the domain.
+- **Application Layer**: Handles use cases and business workflows. This is where I orchestrate operations using the CQRS pattern with MediatR.
+- **Infrastructure Layer**: Deals with external concerns like database access, file storage, and third-party services. This is where I implement the interfaces defined in the domain.
 - **API Layer**: The presentation layer that exposes RESTful endpoints and handles HTTP requests/responses.
 
 This separation makes the codebase easier to test, maintain, and extend over time.
 
 ## Technology Stack
 
-We're using modern .NET technologies to build a robust and performant application:
+I'm using modern .NET technologies to build a robust and performant application:
 
 - **.NET 8** - The latest LTS version of .NET, providing excellent performance and modern language features
 - **ASP.NET Core Web API** - For building RESTful APIs with built-in support for dependency injection, middleware, and more
-- **Entity Framework Core** - Our ORM of choice for database operations, with support for both PostgreSQL and MySQL
+- **Entity Framework Core** - My ORM of choice for database operations, with support for both PostgreSQL and MySQL
 - **JWT Authentication** - Secure token-based authentication for API access
-- **MediatR** - Implements the CQRS pattern, making our code more organized and testable
+- **MediatR** - Implements the CQRS pattern, making the code more organized and testable
 - **FluentValidation** - For comprehensive input validation with clear error messages
 - **Serilog** - Structured logging with file and console outputs for better debugging and monitoring
 - **Hangfire** - Background job processing for scheduled tasks like membership expiry checks
@@ -35,7 +35,7 @@ We're using modern .NET technologies to build a robust and performant applicatio
 ## Key Features
 
 ### EPIC 1: Authentication
-We've implemented a complete authentication system that allows users to register and log in securely. The system uses JWT tokens for stateless authentication, and passwords are hashed using BCrypt before storage. This means even if someone gains access to the database, they can't see actual passwords.
+I've implemented a complete authentication system that allows users to register and log in securely. The system uses JWT tokens for stateless authentication, and passwords are hashed using BCrypt before storage. This means even if someone gains access to the database, they can't see actual passwords.
 
 ### EPIC 2: Business Profile
 Each user can create and manage their business profile. This includes business name, description, contact information, and currency settings. The system supports multi-tenant architecture, so each business's data is completely isolated.
@@ -278,10 +278,19 @@ Before deploying to production, consider the following:
 - CQRS pattern implementation using MediatR
 - Swagger UI is available at `/swagger` for API documentation and testing
 
-## License
+## License & Usage Terms
 
-This is a production-ready MVP designed for commercial use. Feel free to use it as a starting point for your own subscription management system.
+**Important:** This is a production-ready MVP that I've developed. 
+
+**You may NOT use this code, modify it, distribute it, or create derivative works without my explicit written permission. You may NOT use this project in any commercial or non-commercial capacity without proper attribution and credits.**
+
+If you wish to use this codebase:
+1. You must obtain my explicit permission first
+2. You must provide proper attribution and credits to me as the original author
+3. Any usage must be agreed upon in writing
+
+This project is provided for reference and educational purposes only. Unauthorized use is strictly prohibited.
 
 ---
 
-If you have questions or need help, feel free to open an issue on the repository or reach out to the development team.
+If you have questions or would like to discuss usage permissions, please contact me directly.
