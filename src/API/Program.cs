@@ -1,8 +1,13 @@
 using System.Text;
+using System.Transactions;
+using API.Filters;
 using API.Middleware;
 using Application.Interfaces;
 using Domain.Interfaces;
 using FluentValidation;
+using Hangfire;
+using Hangfire.Dashboard;
+using Hangfire.MySql;
 using Infrastructure.BackgroundJobs;
 using Infrastructure.Identity;
 using Infrastructure.Notifications;
@@ -148,10 +153,42 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IReceiptService, ReceiptService>();
 
+// Background job service
+builder.Services.AddScoped<MembershipExpiryService>();
+
 builder.Services.AddHttpContextAccessor();
 
-// Background jobs
-builder.Services.AddHostedService<MembershipExpiryJob>();
+// Hangfire configuration
+var hangfireConnectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseStorage(new MySqlStorage(
+        hangfireConnectionString,
+        new MySqlStorageOptions
+        {
+            TransactionIsolationLevel = IsolationLevel.ReadCommitted,
+            QueuePollInterval = TimeSpan.FromSeconds(15),
+            JobExpirationCheckInterval = TimeSpan.FromHours(1),
+            CountersAggregateInterval = TimeSpan.FromMinutes(5),
+            PrepareSchemaIfNecessary = true,
+            DashboardJobListLimit = 50000,
+            TransactionTimeout = TimeSpan.FromMinutes(1),
+            TablesPrefix = "Hangfire"
+        })));
+
+builder.Services.AddHangfireServer(options =>
+{
+    options.WorkerCount = Environment.ProcessorCount * 5;
+    options.ServerTimeout = TimeSpan.FromMinutes(4);
+    options.SchedulePollingInterval = TimeSpan.FromSeconds(15);
+    options.HeartbeatInterval = TimeSpan.FromSeconds(30);
+    options.ServerCheckInterval = TimeSpan.FromMinutes(1);
+    options.CancellationCheckInterval = TimeSpan.FromSeconds(5);
+});
 
 // CORS
 builder.Services.AddCors(options =>
@@ -180,6 +217,16 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Hangfire Dashboard
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    DashboardTitle = "Subscription Management - Background Jobs",
+    Authorization = new[] { new HangfireAuthorizationFilter() },
+    StatsPollingInterval = 2000,
+    DisplayStorageConnectionString = false,
+    IsReadOnlyFunc = (DashboardContext context) => false
+});
+
 app.MapControllers();
 
 // Ensure database is created and seeded
@@ -193,6 +240,17 @@ using (var scope = app.Services.CreateScope())
     {
         await Infrastructure.Persistence.SeedData.SeedAsync(dbContext);
     }
+
+    // Configure Hangfire recurring jobs
+    RecurringJob.AddOrUpdate<MembershipExpiryService>(
+        "process-expired-memberships",
+        service => service.ProcessExpiredMembershipsAsync(CancellationToken.None),
+        Cron.Daily(2, 0), // Run daily at 2:00 AM UTC
+        new RecurringJobOptions
+        {
+            TimeZone = TimeZoneInfo.Utc,
+            MisfireHandling = MisfireHandlingMode.Relaxed
+        });
 }
 
 app.Run();
