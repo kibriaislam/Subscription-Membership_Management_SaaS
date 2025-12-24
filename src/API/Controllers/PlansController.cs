@@ -1,3 +1,4 @@
+using API.Models;
 using Application.DTOs.Plan;
 using Application.Features.Plans.CreatePlan;
 using Application.Features.Plans.GetPlans;
@@ -11,12 +12,11 @@ namespace API.Controllers;
 /// <summary>
 /// Subscription plan management controller for creating and managing subscription plans.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
 [Tags("Subscription Plans")]
-public class PlansController : ControllerBase
+public class PlansController : BaseController
 {
     private readonly IMediator _mediator;
 
@@ -38,13 +38,13 @@ public class PlansController : ControllerBase
     /// or a 401 Unauthorized response if the user is not authenticated.
     /// </returns>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<SubscriptionPlanDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<SubscriptionPlanDto>>> GetPlans(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<SubscriptionPlanDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<SubscriptionPlanDto>>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<IEnumerable<SubscriptionPlanDto>>>> GetPlans(CancellationToken cancellationToken)
     {
         var query = new GetPlansQuery();
         var result = await _mediator.Send(query, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "Subscription plans retrieved successfully");
     }
 
     /// <summary>
@@ -64,14 +64,14 @@ public class PlansController : ControllerBase
     /// </returns>
     [HttpPost]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(SubscriptionPlanDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<SubscriptionPlanDto>> CreatePlan([FromBody] CreatePlanDto createDto, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<SubscriptionPlanDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriptionPlanDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriptionPlanDto>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<SubscriptionPlanDto>>> CreatePlan([FromBody] CreatePlanDto createDto, CancellationToken cancellationToken)
     {
         var command = new CreatePlanCommand { CreateDto = createDto };
         var result = await _mediator.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetPlans), new { id = result.Id }, result);
+        return CreatedResponse(result, nameof(GetPlans), new { id = result.Id }, "Subscription plan created successfully");
     }
 
     /// <summary>
@@ -93,15 +93,15 @@ public class PlansController : ControllerBase
     /// </returns>
     [HttpPut("{id}")]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(SubscriptionPlanDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<SubscriptionPlanDto>> UpdatePlan(Guid id, [FromBody] UpdatePlanDto updateDto, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<SubscriptionPlanDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriptionPlanDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriptionPlanDto>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriptionPlanDto>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<SubscriptionPlanDto>>> UpdatePlan(Guid id, [FromBody] UpdatePlanDto updateDto, CancellationToken cancellationToken)
     {
         var command = new UpdatePlanCommand { PlanId = id, UpdateDto = updateDto };
         var result = await _mediator.Send(command, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "Subscription plan updated successfully");
     }
 }
 

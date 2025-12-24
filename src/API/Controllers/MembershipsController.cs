@@ -1,3 +1,4 @@
+using API.Models;
 using Application.DTOs.Membership;
 using Application.Features.Memberships.CreateMembership;
 using Application.Features.Memberships.GetMemberships;
@@ -10,12 +11,11 @@ namespace API.Controllers;
 /// <summary>
 /// Membership management controller for assigning subscription plans to members.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
 [Tags("Memberships")]
-public class MembershipsController : ControllerBase
+public class MembershipsController : BaseController
 {
     private readonly IMediator _mediator;
 
@@ -39,15 +39,15 @@ public class MembershipsController : ControllerBase
     /// or a 401 Unauthorized response if the user is not authenticated.
     /// </returns>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<MembershipDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<MembershipDto>>> GetMemberships(
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<MembershipDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<MembershipDto>>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<IEnumerable<MembershipDto>>>> GetMemberships(
         [FromQuery] Guid? memberId = null,
         CancellationToken cancellationToken = default)
     {
         var query = new GetMembershipsQuery { MemberId = memberId };
         var result = await _mediator.Send(query, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "Memberships retrieved successfully");
     }
 
     /// <summary>
@@ -69,14 +69,14 @@ public class MembershipsController : ControllerBase
     /// </returns>
     [HttpPost]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(MembershipDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<MembershipDto>> CreateMembership([FromBody] CreateMembershipDto createDto, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<MembershipDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<MembershipDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<MembershipDto>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<MembershipDto>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<MembershipDto>>> CreateMembership([FromBody] CreateMembershipDto createDto, CancellationToken cancellationToken)
     {
         var command = new CreateMembershipCommand { CreateDto = createDto };
         var result = await _mediator.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetMemberships), new { id = result.Id }, result);
+        return CreatedResponse(result, nameof(GetMemberships), new { id = result.Id }, "Membership created successfully");
     }
 }

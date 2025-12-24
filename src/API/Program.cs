@@ -329,7 +329,7 @@ try
 
     Log.Information("Application started successfully");
     app.Run();
-
+}
 catch (Exception ex)
 {
     Log.Fatal(ex, "Application terminated unexpectedly");

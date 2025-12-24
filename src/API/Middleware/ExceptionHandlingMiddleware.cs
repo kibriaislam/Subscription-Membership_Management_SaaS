@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using API.Models;
 
 namespace API.Middleware;
 
@@ -29,23 +30,32 @@ public class ExceptionHandlingMiddleware
 
     private static Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        var code = exception switch
+        var (statusCode, message) = exception switch
         {
-            UnauthorizedAccessException => HttpStatusCode.Unauthorized,
-            KeyNotFoundException => HttpStatusCode.NotFound,
-            InvalidOperationException => HttpStatusCode.BadRequest,
-            ArgumentException => HttpStatusCode.BadRequest,
-            _ => HttpStatusCode.InternalServerError
+            UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Unauthorized access"),
+            KeyNotFoundException => (HttpStatusCode.NotFound, exception.Message),
+            InvalidOperationException => (HttpStatusCode.BadRequest, exception.Message),
+            ArgumentNullException => (HttpStatusCode.BadRequest, exception.Message),
+            ArgumentException => (HttpStatusCode.BadRequest, exception.Message),
+            _ => (HttpStatusCode.InternalServerError, "An error occurred while processing your request")
         };
 
-        var result = JsonSerializer.Serialize(new
+        var response = ApiResponse<object>.ErrorResponse(
+            message: message,
+            statusCode: (int)statusCode,
+            errors: statusCode == HttpStatusCode.InternalServerError ? null : new List<string> { exception.Message }
+        );
+
+        var options = new JsonSerializerOptions
         {
-            error = exception.Message,
-            statusCode = (int)code
-        });
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false
+        };
+
+        var result = JsonSerializer.Serialize(response, options);
 
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)code;
+        context.Response.StatusCode = (int)statusCode;
 
         return context.Response.WriteAsync(result);
     }

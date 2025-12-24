@@ -1,3 +1,4 @@
+using API.Models;
 using Application.DTOs.Membership;
 using Application.Features.Renewals.GetExpiringMemberships;
 using MediatR;
@@ -9,12 +10,11 @@ namespace API.Controllers;
 /// <summary>
 /// Renewal management controller for tracking expiring memberships.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
 [Tags("Renewals")]
-public class RenewalsController : ControllerBase
+public class RenewalsController : BaseController
 {
     private readonly IMediator _mediator;
 
@@ -39,14 +39,14 @@ public class RenewalsController : ControllerBase
     /// or a 401 Unauthorized response if the user is not authenticated.
     /// </returns>
     [HttpGet("expiring")]
-    [ProducesResponseType(typeof(IEnumerable<MembershipDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<MembershipDto>>> GetExpiringMemberships(
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<MembershipDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<MembershipDto>>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<IEnumerable<MembershipDto>>>> GetExpiringMemberships(
         [FromQuery] int days = 7,
         CancellationToken cancellationToken = default)
     {
         var query = new GetExpiringMembershipsQuery { Days = days };
         var result = await _mediator.Send(query, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "Expiring memberships retrieved successfully");
     }
 }

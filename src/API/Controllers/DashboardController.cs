@@ -1,3 +1,4 @@
+using API.Models;
 using Application.DTOs.Dashboard;
 using Application.Features.Dashboard.GetDashboardStats;
 using MediatR;
@@ -9,12 +10,11 @@ namespace API.Controllers;
 /// <summary>
 /// Dashboard controller for retrieving business statistics and analytics.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
 [Tags("Dashboard")]
-public class DashboardController : ControllerBase
+public class DashboardController : BaseController
 {
     private readonly IMediator _mediator;
 
@@ -42,12 +42,12 @@ public class DashboardController : ControllerBase
     /// or a 401 Unauthorized response if the user is not authenticated.
     /// </returns>
     [HttpGet("stats")]
-    [ProducesResponseType(typeof(DashboardStatsDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<DashboardStatsDto>> GetStats(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<DashboardStatsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<DashboardStatsDto>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<DashboardStatsDto>>> GetStats(CancellationToken cancellationToken)
     {
         var query = new GetDashboardStatsQuery();
         var result = await _mediator.Send(query, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "Dashboard statistics retrieved successfully");
     }
 }

@@ -1,3 +1,4 @@
+using API.Models;
 using Application.DTOs.Payment;
 using Application.Features.Payments.CreatePayment;
 using Application.Features.Payments.GetPayments;
@@ -10,12 +11,11 @@ namespace API.Controllers;
 /// <summary>
 /// Payment management controller for recording and tracking payments.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
 [Tags("Payments")]
-public class PaymentsController : ControllerBase
+public class PaymentsController : BaseController
 {
     private readonly IMediator _mediator;
 
@@ -40,15 +40,15 @@ public class PaymentsController : ControllerBase
     /// or a 401 Unauthorized response if the user is not authenticated.
     /// </returns>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<PaymentDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<PaymentDto>>> GetPayments(
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<PaymentDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<PaymentDto>>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<IEnumerable<PaymentDto>>>> GetPayments(
         [FromQuery] Guid? membershipId = null,
         CancellationToken cancellationToken = default)
     {
         var query = new GetPaymentsQuery { MembershipId = membershipId };
         var result = await _mediator.Send(query, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "Payments retrieved successfully");
     }
 
     /// <summary>
@@ -70,14 +70,14 @@ public class PaymentsController : ControllerBase
     /// </returns>
     [HttpPost]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(PaymentDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PaymentDto>> CreatePayment([FromBody] CreatePaymentDto createDto, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<PaymentDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<PaymentDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<PaymentDto>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<PaymentDto>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<PaymentDto>>> CreatePayment([FromBody] CreatePaymentDto createDto, CancellationToken cancellationToken)
     {
         var command = new CreatePaymentCommand { CreateDto = createDto };
         var result = await _mediator.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetPayments), new { id = result.Id }, result);
+        return CreatedResponse(result, nameof(GetPayments), new { id = result.Id }, "Payment recorded successfully");
     }
 }

@@ -1,3 +1,4 @@
+using API.Models;
 using Application.DTOs.Notification;
 using Application.Interfaces;
 using Domain.Interfaces;
@@ -9,12 +10,11 @@ namespace API.Controllers;
 /// <summary>
 /// Notifications controller for managing user notifications.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
 [Tags("Notifications")]
-public class NotificationsController : ControllerBase
+public class NotificationsController : BaseController
 {
     private readonly INotificationService _notificationService;
     private readonly IUnitOfWork _unitOfWork;
@@ -39,9 +39,9 @@ public class NotificationsController : ControllerBase
     /// <param name="cancellationToken">A token to observe for request cancellation.</param>
     /// <returns>List of notifications</returns>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<NotificationDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<NotificationDto>>> GetNotifications(
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<NotificationDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<NotificationDto>>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<IEnumerable<NotificationDto>>>> GetNotifications(
         [FromQuery] bool unreadOnly = false,
         [FromQuery] int skip = 0,
         [FromQuery] int take = 50,
@@ -49,7 +49,7 @@ public class NotificationsController : ControllerBase
     {
         if (!_currentUserService.UserId.HasValue)
         {
-            return Unauthorized();
+            return UnauthorizedResponse<IEnumerable<NotificationDto>>("User not authenticated");
         }
 
         var userId = _currentUserService.UserId.Value;
@@ -80,7 +80,7 @@ public class NotificationsController : ControllerBase
             })
             .ToList();
 
-        return Ok(orderedNotifications);
+        return OkResponse<IEnumerable<NotificationDto>>(orderedNotifications, "Notifications retrieved successfully");
     }
 
     /// <summary>
@@ -89,13 +89,13 @@ public class NotificationsController : ControllerBase
     /// <param name="cancellationToken">A token to observe for request cancellation.</param>
     /// <returns>Count of unread notifications</returns>
     [HttpGet("unread/count")]
-    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<int>> GetUnreadCount(CancellationToken cancellationToken = default)
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<object>>> GetUnreadCount(CancellationToken cancellationToken = default)
     {
         if (!_currentUserService.UserId.HasValue)
         {
-            return Unauthorized();
+            return UnauthorizedResponse<object>("User not authenticated");
         }
 
         var userId = _currentUserService.UserId.Value;
@@ -103,7 +103,7 @@ public class NotificationsController : ControllerBase
             n => n.UserId == userId && !n.IsDeleted && !n.IsRead,
             cancellationToken);
 
-        return Ok(count);
+        return OkResponse<object>(new { count }, "Unread notification count retrieved successfully");
     }
 
     /// <summary>
@@ -113,30 +113,30 @@ public class NotificationsController : ControllerBase
     /// <param name="cancellationToken">A token to observe for request cancellation.</param>
     /// <returns>No content on success</returns>
     [HttpPost("{id}/read")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> MarkAsRead(
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse>> MarkAsRead(
         Guid id,
         CancellationToken cancellationToken = default)
     {
         if (!_currentUserService.UserId.HasValue)
         {
-            return Unauthorized();
+            return UnauthorizedResponse("User not authenticated");
         }
 
         try
         {
             await _notificationService.MarkAsReadAsync(id, _currentUserService.UserId.Value, cancellationToken);
-            return NoContent();
+            return NoContentResponse("Notification marked as read");
         }
         catch (InvalidOperationException)
         {
-            return NotFound();
+            return NotFoundResponse("Notification not found");
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid();
+            return UnauthorizedResponse("Unauthorized to access this notification");
         }
     }
 
@@ -146,17 +146,17 @@ public class NotificationsController : ControllerBase
     /// <param name="cancellationToken">A token to observe for request cancellation.</param>
     /// <returns>No content on success</returns>
     [HttpPost("read-all")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> MarkAllAsRead(CancellationToken cancellationToken = default)
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse>> MarkAllAsRead(CancellationToken cancellationToken = default)
     {
         if (!_currentUserService.UserId.HasValue)
         {
-            return Unauthorized();
+            return UnauthorizedResponse("User not authenticated");
         }
 
         await _notificationService.MarkAllAsReadAsync(_currentUserService.UserId.Value, cancellationToken);
-        return NoContent();
+        return NoContentResponse("All notifications marked as read");
     }
 }
 

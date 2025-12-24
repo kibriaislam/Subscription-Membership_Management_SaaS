@@ -1,3 +1,4 @@
+using API.Models;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,11 +8,10 @@ namespace API.Controllers;
 /// <summary>
 /// Receipt generation controller for creating and sharing payment receipts.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Tags("Receipts")]
-public class ReceiptsController : ControllerBase
+public class ReceiptsController : BaseController
 {
     private readonly IReceiptService _receiptService;
 
@@ -89,12 +89,12 @@ public class ReceiptsController : ControllerBase
     /// </returns>
     [HttpGet("{paymentId}/link")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<string>> GetShareableLink(Guid paymentId, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<object>>> GetShareableLink(Guid paymentId, CancellationToken cancellationToken)
     {
         var link = await _receiptService.GenerateShareableLinkAsync(paymentId, cancellationToken);
-        return Ok(new { link });
+        return OkResponse<object>(new { link }, "Shareable link generated successfully");
     }
 }

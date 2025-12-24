@@ -1,3 +1,4 @@
+using API.Models;
 using Application.DTOs.Business;
 using Application.Features.Business.GetBusiness;
 using Application.Features.Business.UpdateBusiness;
@@ -10,12 +11,11 @@ namespace API.Controllers;
 /// <summary>
 /// Business profile management controller for retrieving and updating business information.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
 [Tags("Business")]
-public class BusinessController : ControllerBase
+public class BusinessController : BaseController
 {
     private readonly IMediator _mediator;
 
@@ -38,14 +38,14 @@ public class BusinessController : ControllerBase
     /// or a 404 Not Found response if the business profile does not exist.
     /// </returns>
     [HttpGet]
-    [ProducesResponseType(typeof(BusinessDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<BusinessDto>> GetBusiness(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<BusinessDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<BusinessDto>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<BusinessDto>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<BusinessDto>>> GetBusiness(CancellationToken cancellationToken)
     {
         var query = new GetBusinessQuery();
         var result = await _mediator.Send(query, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "Business profile retrieved successfully");
     }
 
     /// <summary>
@@ -65,15 +65,15 @@ public class BusinessController : ControllerBase
     /// </returns>
     [HttpPut]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(BusinessDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<BusinessDto>> UpdateBusiness([FromBody] UpdateBusinessDto updateDto, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<BusinessDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<BusinessDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<BusinessDto>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<BusinessDto>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<BusinessDto>>> UpdateBusiness([FromBody] UpdateBusinessDto updateDto, CancellationToken cancellationToken)
     {
         var command = new UpdateBusinessCommand { UpdateDto = updateDto };
         var result = await _mediator.Send(command, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "Business profile updated successfully");
     }
 }
 

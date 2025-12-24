@@ -1,3 +1,4 @@
+using API.Models;
 using Application.DTOs.Auth;
 using Application.Features.Auth.Login;
 using Application.Features.Auth.Register;
@@ -9,11 +10,10 @@ namespace API.Controllers;
 /// <summary>
 /// Authentication controller for user registration and login operations.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
 [Tags("Authentication")]
-public class AuthController : ControllerBase
+public class AuthController : BaseController
 {
     private readonly IMediator _mediator;
 
@@ -38,13 +38,13 @@ public class AuthController : ControllerBase
     /// </returns>
     [HttpPost("register")]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto registerDto, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Register([FromBody] RegisterDto registerDto, CancellationToken cancellationToken)
     {
         var command = new RegisterCommand { RegisterDto = registerDto };
         var result = await _mediator.Send(command, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "User registered successfully");
     }
 
     /// <summary>
@@ -63,13 +63,13 @@ public class AuthController : ControllerBase
     /// </returns>
     [HttpPost("login")]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto loginDto, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Login([FromBody] LoginDto loginDto, CancellationToken cancellationToken)
     {
         var command = new LoginCommand { LoginDto = loginDto };
         var result = await _mediator.Send(command, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "Login successful");
     }
 }
 

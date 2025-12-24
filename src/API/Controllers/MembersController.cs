@@ -1,3 +1,4 @@
+using API.Models;
 using Application.DTOs.Member;
 using Application.Features.Member.CreateMember;
 using Application.Features.Member.DeactivateMember;
@@ -12,12 +13,11 @@ namespace API.Controllers;
 /// <summary>
 /// Member management controller for CRUD operations on business members.
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
 [Tags("Members")]
-public class MembersController : ControllerBase
+public class MembersController : BaseController
 {
     private readonly IMediator _mediator;
 
@@ -43,9 +43,9 @@ public class MembersController : ControllerBase
     /// or a 401 Unauthorized response if the user is not authenticated.
     /// </returns>
     [HttpGet]
-    [ProducesResponseType(typeof(PagedMemberResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PagedMemberResponseDto>> GetMembers(
+    [ProducesResponseType(typeof(ApiResponse<PagedMemberResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PagedMemberResponseDto>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<PagedMemberResponseDto>>> GetMembers(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string? searchTerm = null,
@@ -58,7 +58,7 @@ public class MembersController : ControllerBase
             SearchTerm = searchTerm
         };
         var result = await _mediator.Send(query, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "Members retrieved successfully");
     }
 
     /// <summary>
@@ -77,14 +77,14 @@ public class MembersController : ControllerBase
     /// </returns>
     [HttpPost]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(MemberDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<MemberDto>> CreateMember([FromBody] CreateMemberDto createDto, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<MemberDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<MemberDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<MemberDto>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<MemberDto>>> CreateMember([FromBody] CreateMemberDto createDto, CancellationToken cancellationToken)
     {
         var command = new CreateMemberCommand { CreateDto = createDto };
         var result = await _mediator.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetMembers), new { id = result.Id }, result);
+        return CreatedResponse(result, nameof(GetMembers), new { id = result.Id }, "Member created successfully");
     }
 
     /// <summary>
@@ -105,15 +105,15 @@ public class MembersController : ControllerBase
     /// </returns>
     [HttpPut("{id}")]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(MemberDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<MemberDto>> UpdateMember(Guid id, [FromBody] UpdateMemberDto updateDto, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<MemberDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<MemberDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<MemberDto>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<MemberDto>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<MemberDto>>> UpdateMember(Guid id, [FromBody] UpdateMemberDto updateDto, CancellationToken cancellationToken)
     {
         var command = new UpdateMemberCommand { MemberId = id, UpdateDto = updateDto };
         var result = await _mediator.Send(command, cancellationToken);
-        return Ok(result);
+        return OkResponse(result, "Member updated successfully");
     }
 
     /// <summary>
@@ -132,14 +132,14 @@ public class MembersController : ControllerBase
     /// or a 404 Not Found response if the member does not exist or does not belong to the user's business.
     /// </returns>
     [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeactivateMember(Guid id, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse>> DeactivateMember(Guid id, CancellationToken cancellationToken)
     {
         var command = new DeactivateMemberCommand { MemberId = id };
         await _mediator.Send(command, cancellationToken);
-        return NoContent();
+        return NoContentResponse("Member deactivated successfully");
     }
 }
 
