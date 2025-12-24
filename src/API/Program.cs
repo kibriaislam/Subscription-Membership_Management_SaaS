@@ -1,6 +1,7 @@
 using System.Text;
 using System.Transactions;
 using API.Filters;
+using API.Hubs;
 using API.Middleware;
 using Application.Interfaces;
 using Domain.Interfaces;
@@ -15,6 +16,7 @@ using Infrastructure.Persistence;
 using Infrastructure.Receipts;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -126,6 +128,23 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
+
+    // Configure JWT for SignalR WebSocket connections
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            // If the request is for the notification hub and contains an access token
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/notificationHub"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
@@ -150,13 +169,27 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<INotificationService>(sp =>
+{
+    var hubContext = sp.GetRequiredService<IHubContext<NotificationHub>>();
+    var unitOfWork = sp.GetRequiredService<IUnitOfWork>();
+    var logger = sp.GetRequiredService<ILogger<NotificationService>>();
+    return new NotificationService(hubContext.Clients, unitOfWork, logger);
+});
 builder.Services.AddScoped<IReceiptService, ReceiptService>();
 
 // Background job service
 builder.Services.AddScoped<MembershipExpiryService>();
 
 builder.Services.AddHttpContextAccessor();
+
+// SignalR configuration
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+    options.MaximumReceiveMessageSize = 1024 * 1024; // 1MB
+    options.StreamBufferCapacity = 10;
+});
 
 // Hangfire configuration
 var hangfireConnectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -190,14 +223,15 @@ builder.Services.AddHangfireServer(options =>
     options.CancellationCheckInterval = TimeSpan.FromSeconds(5);
 });
 
-// CORS
+// CORS - Updated to support SignalR
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5000", "http://localhost:5001", "http://localhost:5002", "https://localhost:5001", "https://localhost:5003")
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials(); // Required for SignalR
     });
 });
 
@@ -228,6 +262,13 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 });
 
 app.MapControllers();
+
+// Map SignalR Hub
+app.MapHub<NotificationHub>("/notificationHub", options =>
+{
+    options.Transports = Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets |
+                         Microsoft.AspNetCore.Http.Connections.HttpTransportType.LongPolling;
+});
 
 // Ensure database is created and seeded
 using (var scope = app.Services.CreateScope())

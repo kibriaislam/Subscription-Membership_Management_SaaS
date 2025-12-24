@@ -20,6 +20,7 @@ public class UnitOfWork : IUnitOfWork
         Memberships = new MembershipRepository(_context);
         Payments = new PaymentRepository(_context);
         AuditLogs = new Repository<AuditLog>(_context);
+        Notifications = new Repository<Notification>(_context);
     }
 
     public IRepository<User> Users { get; }
@@ -29,6 +30,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Membership> Memberships { get; }
     public IRepository<Payment> Payments { get; }
     public IRepository<AuditLog> AuditLogs { get; }
+    public IRepository<Notification> Notifications { get; }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

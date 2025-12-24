@@ -16,6 +16,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Membership> Memberships { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -131,6 +132,24 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.EntityType).IsRequired().HasMaxLength(100);
         });
 
+        // Notification configuration
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.BusinessId);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => new { e.UserId, e.IsRead });
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Message).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.RelatedEntityType).HasMaxLength(100);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         // Soft delete filter
         modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Business>().HasQueryFilter(e => !e.IsDeleted);
@@ -138,6 +157,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<SubscriptionPlan>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Membership>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Payment>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Notification>().HasQueryFilter(e => !e.IsDeleted);
     }
 }
 

@@ -11,6 +11,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<Membership> Memberships { get; }
     IRepository<Payment> Payments { get; }
     IRepository<AuditLog> AuditLogs { get; }
+    IRepository<Notification> Notifications { get; }
     
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task BeginTransactionAsync(CancellationToken cancellationToken = default);
